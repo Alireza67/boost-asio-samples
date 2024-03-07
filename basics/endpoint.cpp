@@ -37,6 +37,17 @@ TEST(endpoint, creating_client_endpoint)
 	EXPECT_EQ(typeid(asio::ip::tcp).name(), typeid(ep.protocol()).name());
 }
 
+TEST(endpoint, creating_client_endpoint_ipv6) 
+{
+	auto ip = "fe36::404:c3fa:ef1e:3829"s;
+	unsigned short port = 6969;
+	auto ep = CreateEndpoing(ip, port);
+
+	EXPECT_EQ(port, ep.port());
+	EXPECT_EQ(ip, ep.address().to_string());
+	EXPECT_EQ(typeid(asio::ip::tcp).name(), typeid(ep.protocol()).name());
+}
+
 TEST(endpoint, creating_client_endpoint_bad_address)
 {
 	auto ip = "127.0.0.300"s;
