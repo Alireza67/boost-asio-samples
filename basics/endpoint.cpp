@@ -26,6 +26,13 @@ EndPoint CreateEndpoing(std::string& ip, unsigned short port)
 	return EndPoint(ip_address, port);
 }
 
+EndPoint CreateEndpoing(unsigned short port)
+{
+	boost::system::error_code ec;
+	asio::ip::address ip_address = asio::ip::address_v4::any();
+	return EndPoint(ip_address, port);
+}
+
 TEST(endpoint, creating_client_endpoint) 
 {
 	auto ip = "127.0.0.1"s;
@@ -53,4 +60,14 @@ TEST(endpoint, creating_client_endpoint_bad_address)
 	auto ip = "127.0.0.300"s;
 	unsigned short port = 6969;
 	EXPECT_THROW(CreateEndpoing(ip, port), std::runtime_error);
+}
+
+TEST(endpoint, creating_serverside_endpoint)
+{
+	auto ip = "0.0.0.0"s;
+	unsigned short port = 6969;
+	auto ep = CreateEndpoing(port);
+
+	EXPECT_EQ(port, ep.port());
+	EXPECT_EQ(ip, ep.address().to_string());
 }
