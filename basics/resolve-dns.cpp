@@ -91,7 +91,7 @@ TEST(dnsResolve, udp_resolver)
 	auto port = "80"s;
 
 
-	auto eps = GetEndpoints(ios, host, port);
+	auto eps = GetUdpEndpoints(ios, host, port);
 	if (eps.size())
 	{
 		auto address = eps[0].address().to_string();
@@ -107,5 +107,5 @@ TEST(dnsResolve, udp_resolver_failed)
 	auto host = "fake_address_that_never_be_resolved.com"s;
 	auto port = "80"s;
 
-	EXPECT_THROW(GetEndpoints(ios, host, port), std::runtime_error);
+	EXPECT_THROW(GetUdpEndpoints(ios, host, port), std::runtime_error);
 }
