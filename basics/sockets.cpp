@@ -5,6 +5,7 @@ using namespace boost;
 
 using TcpActiveSocket = asio::ip::tcp::socket;
 using UdpActiveSocket = asio::ip::udp::socket;
+using Acceptor = asio::ip::tcp::acceptor;
 
 TcpActiveSocket CreateAndOpenActiveSocket(asio::io_service& ios)
 {
@@ -98,4 +99,28 @@ TEST(sockets, create_and_open_udp_active_socket_one_method)
 {
 	asio::io_service ios;
 	EXPECT_NO_THROW(CreateAndOpenUdpActiveSocketInOneAction(ios));
+}
+
+Acceptor CreateAndOpenAcceptor(asio::io_service& ios)
+{
+	asio::ip::tcp protocol = asio::ip::tcp::v6();
+	Acceptor acceptor(ios);
+
+	boost::system::error_code ec;
+	acceptor.open(protocol, ec);
+	if (ec.value() != 0)
+	{
+		std::stringstream msg;
+		msg << "Failed to open the acceptor socket!"
+			<< "Error code = "
+			<< ec.value() << ". Message: " << ec.message();
+		throw std::runtime_error(msg.str());
+	}
+	return acceptor;
+}
+
+TEST(sockets, acceptor)
+{
+	asio::io_service ios;
+	EXPECT_NO_THROW(CreateAndOpenAcceptor(ios));
 }
