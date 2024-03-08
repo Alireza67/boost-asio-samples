@@ -4,16 +4,21 @@
 using namespace boost;
 using namespace std::literals;
 
-std::vector<asio::ip::tcp::endpoint> GetEndpoints(asio::io_service& ios, const std::string& host, const std::string& port)
+template<typename Protocol>
+std::vector<typename Protocol::endpoint> GetEndpoints(asio::io_service& ios, const std::string& host, const std::string& port)
 {
-	asio::ip::tcp::resolver::query resolver_query(host, port, asio::ip::tcp::resolver::query::numeric_service);
-	asio::ip::tcp::resolver resolver(ios);
+	using Resolver = asio::ip::basic_resolver<Protocol>;
+	using iterator = typename Resolver::iterator;
+	using Endpoint = typename Protocol::endpoint;
+	using Query = typename Resolver::query;
+
+	Query resolver_query(host, port, Resolver::query::numeric_service);
+	Resolver resolver(ios);
 
 	boost::system::error_code ec;
-	asio::ip::tcp::resolver::iterator it = resolver.resolve(resolver_query, ec);
-	
-	if (ec.value() != 0)
-	{
+	iterator it = resolver.resolve(resolver_query, ec);
+
+	if (ec.value() != 0) {
 		std::stringstream msg;
 		msg << "Failed to resolve a DNS name."
 			<< "Error code = " << ec.value()
@@ -21,11 +26,10 @@ std::vector<asio::ip::tcp::endpoint> GetEndpoints(asio::io_service& ios, const s
 		throw std::runtime_error(msg.str());
 	}
 
-	asio::ip::tcp::resolver::iterator end{};
-	std::vector<asio::ip::tcp::endpoint> output;
+	iterator end{};
+	std::vector<Endpoint> output;
 
-	for (; it != end; it++)
-	{
+	for (; it != end; it++) {
 		output.emplace_back(it->endpoint());
 	}
 	return output;
@@ -38,7 +42,7 @@ TEST(dnsResolve, resolver)
 	auto port = "80"s;
 
 
-	auto eps = GetEndpoints(ios, host, port);
+	auto eps = GetEndpoints<asio::ip::tcp>(ios, host, port);
 	if (eps.size())
 	{
 		auto address = eps[0].address().to_string();
@@ -54,34 +58,7 @@ TEST(dnsResolve, resolver_failed)
 	auto host = "fake_address_that_never_be_resolved.com"s;
 	auto port = "80"s;
 
-	EXPECT_THROW(GetEndpoints(ios, host, port), std::runtime_error);
-}
-
-std::vector<asio::ip::udp::endpoint> GetUdpEndpoints(asio::io_service& ios, const std::string& host, const std::string& port)
-{
-	asio::ip::udp::resolver::query resolver_query(host, port, asio::ip::tcp::resolver::query::numeric_service);
-	asio::ip::udp::resolver resolver(ios);
-
-	boost::system::error_code ec;
-	asio::ip::udp::resolver::iterator it = resolver.resolve(resolver_query, ec);
-
-	if (ec.value() != 0)
-	{
-		std::stringstream msg;
-		msg << "Failed to resolve a DNS name."
-			<< "Error code = " << ec.value()
-			<< ". Message = " << ec.message();
-		throw std::runtime_error(msg.str());
-	}
-
-	asio::ip::udp::resolver::iterator end{};
-	std::vector<asio::ip::udp::endpoint> output;
-
-	for (; it != end; it++)
-	{
-		output.emplace_back(it->endpoint());
-	}
-	return output;
+	EXPECT_THROW(GetEndpoints<asio::ip::tcp>(ios, host, port), std::runtime_error);
 }
 
 TEST(dnsResolve, udp_resolver)
@@ -91,7 +68,7 @@ TEST(dnsResolve, udp_resolver)
 	auto port = "80"s;
 
 
-	auto eps = GetUdpEndpoints(ios, host, port);
+	auto eps = GetEndpoints<asio::ip::udp>(ios, host, port);
 	if (eps.size())
 	{
 		auto address = eps[0].address().to_string();
@@ -107,5 +84,5 @@ TEST(dnsResolve, udp_resolver_failed)
 	auto host = "fake_address_that_never_be_resolved.com"s;
 	auto port = "80"s;
 
-	EXPECT_THROW(GetUdpEndpoints(ios, host, port), std::runtime_error);
+	EXPECT_THROW(GetEndpoints<asio::ip::udp>(ios, host, port), std::runtime_error);
 }
