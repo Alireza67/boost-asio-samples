@@ -53,3 +53,14 @@ TEST(binding, bind)
 	Bind(acceptor, endpoint);
 	SUCCEED();
 }
+
+TEST(binding, double_binding)
+{
+	asio::io_service ios;
+	unsigned short port = 6969;
+	auto endpoint = CreateEndpoint<asio::ip::tcp, asio::ip::address_v4>(port);
+	auto acceptor = CreateAndOpenAcceptor(ios, endpoint.protocol());
+	Bind(acceptor, endpoint);
+	auto acceptor2 = CreateAndOpenAcceptor(ios, endpoint.protocol());
+	EXPECT_THROW(Bind(acceptor2, endpoint), std::runtime_error);
+}
