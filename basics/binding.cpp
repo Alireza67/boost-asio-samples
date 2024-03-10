@@ -3,6 +3,7 @@
 #include "asiolib/binding.hpp"
 #include "asiolib/sockets.hpp"
 #include "asiolib/endpoints.hpp"
+#include "asiolib/dns-resolve.hpp"
 
 TEST(binding, bind)
 {
@@ -54,4 +55,19 @@ TEST(connecting, connect_without_server)
 	auto endpoint = CreateEndpoint<asio::ip::tcp>(ip, port);
 	auto socket = CreateAndOpenSocket(ios, endpoint.protocol());
 	EXPECT_THROW(Connect(socket, endpoint), std::runtime_error);
+}
+
+TEST(connecting, connect_by_dns_resolve)
+{
+	asio::io_service ios;
+	auto host = "google.com"s;
+	auto port = "80"s;
+	auto eps = GetEndpoints<asio::ip::tcp>(ios, host, port);
+
+	for (auto & endpoint: eps)
+	{
+		auto socket = CreateAndOpenSocket(ios, endpoint.protocol());
+		EXPECT_NO_THROW(Connect(socket, endpoint), std::runtime_error);
+		break;
+	}
 }
