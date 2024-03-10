@@ -139,8 +139,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="binding.hpp" />
+    <ClInclude Include="dns-resolve.hpp" />
     <ClInclude Include="endpoints.hpp" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="sockets.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

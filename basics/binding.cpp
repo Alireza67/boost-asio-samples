@@ -1,73 +1,8 @@
+#pragma once
 #include "pch.h"
+#include "asiolib/binding.hpp"
+#include "asiolib/sockets.hpp"
 #include "asiolib/endpoints.hpp"
-
-using namespace boost;
-using namespace std::literals;
-using Acceptor = asio::ip::tcp::acceptor;
-
-Acceptor CreateAndOpenAcceptor(asio::io_service& ios, asio::ip::tcp protocol)
-{
-	Acceptor acceptor(ios);
-	boost::system::error_code ec;
-	acceptor.open(protocol, ec);
-	if (ec.value() != 0)
-	{
-		std::stringstream msg;
-		msg << "Failed to open the acceptor socket!"
-			<< "Error code = "
-			<< ec.value() << ". Message: " << ec.message();
-		throw std::runtime_error(msg.str());
-	}
-	return acceptor;
-}
-
-template<typename Protocol>
-typename Protocol::socket CreateAndOpenSocket(asio::io_service& ios, Protocol protocol)
-{
-	using Socket = typename Protocol::socket;
-	try
-	{
-		Socket socket(ios, protocol);
-		return socket;
-	}
-	catch (boost::system::system_error& e) {
-		std::stringstream msg;
-		msg << "Error occured! Error code = " << e.code()
-			<< ". Message: " << e.what();
-		throw std::runtime_error(msg.str());
-	}
-}
-
-template<typename Acceptor, typename Endpoint>
-void Bind(Acceptor& acceptor, Endpoint& endpoint)
-{
-	boost::system::error_code ec;
-	acceptor.bind(endpoint, ec);
-	if (ec.value() != 0)
-	{
-		std::stringstream msg;
-		msg << "Failed to bind the acceptor socket."
-			<< "Error code = " << ec.value() << ". Message: "
-			<< ec.message();
-		throw std::runtime_error(msg.str());
-	}
-}
-
-template<typename Socket, typename Endpoint>
-void Connect(Socket& socket, Endpoint& endpoint)
-{
-	try
-	{
-		socket.connect(endpoint);
-	}
-	catch (boost::system::system_error& e)
-	{
-		std::stringstream msg;
-		msg << "Error occured! Error code = " << e.code()
-			<< ". Message: " << e.what();
-		throw std::runtime_error(msg.str());
-	}
-}
 
 TEST(binding, bind)
 {

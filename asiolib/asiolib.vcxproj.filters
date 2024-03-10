@@ -21,6 +21,15 @@
     <ClInclude Include="endpoints.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="sockets.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dns-resolve.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="binding.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

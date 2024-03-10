@@ -6,7 +6,7 @@ using namespace boost;
 using namespace std::literals;
 
 template<typename Protocol>
-typename Protocol::endpoint CreateEndpoint(std::string& ip, unsigned short port)
+inline typename Protocol::endpoint CreateEndpoint(std::string& ip, unsigned short port)
 {
 	using Endpoint = typename Protocol::endpoint;
 	boost::system::error_code ec;
@@ -23,7 +23,7 @@ typename Protocol::endpoint CreateEndpoint(std::string& ip, unsigned short port)
 }
 
 template<typename Protocol, typename IpVersion>
-typename Protocol::endpoint CreateEndpoint(unsigned short port)
+inline typename Protocol::endpoint CreateEndpoint(unsigned short port)
 {
 	using Endpoint = typename Protocol::endpoint;
 	boost::system::error_code ec;
