@@ -71,3 +71,13 @@ TEST(connecting, connect_by_dns_resolve)
 		break;
 	}
 }
+
+TEST(connecting, connect_by_iterator_dns_resolve)
+{
+	asio::io_service ios;
+	auto host = "google.com"s;
+	auto port = "80"s;
+	auto itr = GetEndpointsItr<asio::ip::tcp>(ios, host, port);
+	auto socket = CreateAndOpenSocket(ios, asio::ip::tcp::v4());
+	EXPECT_NO_THROW(asio::connect(socket, itr));
+}
