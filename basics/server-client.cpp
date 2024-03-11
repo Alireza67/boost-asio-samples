@@ -4,7 +4,7 @@
 #include "asiolib/servers.hpp"
 #include "asiolib/clients.hpp"
 
-TEST(server_client, runServer)
+TEST(server_client, runServer_runClient)
 {
 	auto ip = "127.0.0.1"s;
 	unsigned short port = 19871;
