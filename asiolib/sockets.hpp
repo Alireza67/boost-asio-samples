@@ -24,6 +24,23 @@ inline Acceptor CreateAndOpenAcceptor(asio::io_service& ios, asio::ip::tcp proto
 }
 
 template<typename Protocol>
+inline typename Protocol::socket CreateSocket(asio::io_service& ios)
+{
+	using Socket = typename Protocol::socket;
+	try
+	{
+		Socket socket(ios);
+		return socket;
+	}
+	catch (boost::system::system_error& e) {
+		std::stringstream msg;
+		msg << "Error occured! Error code = " << e.code()
+			<< ". Message: " << e.what();
+		throw std::runtime_error(msg.str());
+	}
+}
+
+template<typename Protocol>
 inline typename Protocol::socket CreateAndOpenSocket(asio::io_service& ios, Protocol protocol)
 {
 	using Socket = typename Protocol::socket;
@@ -41,7 +58,7 @@ inline typename Protocol::socket CreateAndOpenSocket(asio::io_service& ios, Prot
 }
 
 template<typename Protocol>
-inline typename Protocol::socket CreateAndOpenActiveSocket(asio::io_service& ios)
+inline typename Protocol::socket CreateAndOpenSocket(asio::io_service& ios)
 {
 	using Socket = typename Protocol::socket;
 
@@ -60,22 +77,4 @@ inline typename Protocol::socket CreateAndOpenActiveSocket(asio::io_service& ios
 	}
 
 	return std::move(socket);
-}
-
-template<typename Protocol>
-inline typename Protocol::socket CreateAndOpenActiveSocketInOneAction(asio::io_service& ios)
-{
-	using Socket = typename Protocol::socket;
-	try
-	{
-		Protocol protocol = Protocol::v4();
-		Socket socket(ios, protocol);
-		return socket;
-	}
-	catch (boost::system::system_error& e) {
-		std::stringstream msg;
-		msg << "Error occured! Error code = " << e.code()
-			<< ". Message: " << e.what();
-		throw std::runtime_error(msg.str());
-	}
 }

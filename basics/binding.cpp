@@ -67,7 +67,7 @@ TEST(connecting, connect_by_dns_resolve)
 	for (auto & endpoint: eps)
 	{
 		auto socket = CreateAndOpenSocket(ios, endpoint.protocol());
-		EXPECT_NO_THROW(Connect(socket, endpoint), std::runtime_error);
+		EXPECT_NO_THROW(Connect(socket, endpoint));
 		break;
 	}
 }
@@ -78,6 +78,6 @@ TEST(connecting, connect_by_iterator_dns_resolve)
 	auto host = "google.com"s;
 	auto port = "80"s;
 	auto itr = GetEndpointsItr<asio::ip::tcp>(ios, host, port);
-	auto socket = CreateAndOpenSocket(ios, asio::ip::tcp::v4());
+	auto socket = CreateSocket<asio::ip::tcp>(ios);
 	EXPECT_NO_THROW(asio::connect(socket, itr));
 }
