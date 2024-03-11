@@ -140,9 +140,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="binding.hpp" />
+    <ClInclude Include="clients.hpp" />
     <ClInclude Include="dns-resolve.hpp" />
     <ClInclude Include="endpoints.hpp" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="servers.hpp" />
     <ClInclude Include="sockets.hpp" />
   </ItemGroup>
   <ItemGroup>
