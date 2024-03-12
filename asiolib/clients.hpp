@@ -18,3 +18,22 @@ inline void RunClient(const std::string& ip, const unsigned short portNumber)
 		std::cout << std::string(e.what()) << '\n';
 	}
 }
+
+template<typename Protocol>
+inline typename Protocol::socket GetConnectedSocket(
+	asio::io_context& ioc, 
+	const std::string& ip, 
+	const unsigned short portNumber)
+{
+	auto endPoint = CreateEndpoint<Protocol>(ip, portNumber);
+	try
+	{
+		auto socket = CreateSocket<Protocol>(ioc);
+		socket.connect(endPoint);
+		return std::move(socket);
+	}
+	catch (std::exception& e)
+	{
+		std::cout << std::string(e.what()) << '\n';
+	}
+}
