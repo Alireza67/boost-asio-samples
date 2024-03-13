@@ -76,7 +76,10 @@ WriteToSocket(Socket& socket, Buffer& buffer)
 	}
 }
 
-template<typename Socket, typename Buffer, typename std::enable_if<!is_shared_ptr<Socket>::value, void>::type* = nullptr>
+template<
+	typename Socket, 
+	typename Buffer, 
+	typename std::enable_if<!is_shared_ptr<Socket>::value, void>::type* = nullptr>
 std::size_t WriteToSocketInSingleCall(Socket& socket, Buffer& buffer)
 {
 	try
@@ -92,7 +95,10 @@ std::size_t WriteToSocketInSingleCall(Socket& socket, Buffer& buffer)
 	}
 }
 
-template<typename Socket, typename Buffer, typename std::enable_if<is_shared_ptr<Socket>::value, void>::type* = nullptr>
+template<
+	typename Socket, 
+	typename Buffer, 
+	typename std::enable_if<is_shared_ptr<Socket>::value, void>::type* = nullptr>
 std::size_t WriteToSocketInSingleCall(Socket& socket, Buffer& buffer)
 {
 	try
@@ -103,6 +109,103 @@ std::size_t WriteToSocketInSingleCall(Socket& socket, Buffer& buffer)
 	{
 		std::stringstream msg;
 		msg << "Failed to write to socket. Error code = "
+			<< ". Message: " << std::string(e.what());
+		throw std::runtime_error(msg.str());
+	}
+}
+
+
+template<
+	typename Socket,
+	std::size_t BufferSize,
+	typename std::enable_if<!is_shared_ptr<Socket>::value, void>::type* = nullptr>
+std::string ReadFromSocket(Socket& socket)
+{
+	std::string buffer(BufferSize, ' ');
+	std::size_t totalBytesRead{};
+
+	try
+	{
+		while (totalBytesRead != BufferSize)
+		{
+			totalBytesRead += socket.read_some(asio::buffer(buffer.data() + totalBytesRead,
+															BufferSize - totalBytesRead));
+		}
+		return buffer;
+	}
+	catch (const system::system_error& e)
+	{
+		std::stringstream msg;
+		msg << "Failed to read to socket. Error code = "
+			<< ". Message: " << std::string(e.what());
+		throw std::runtime_error(msg.str());
+	}
+}
+
+template<
+	typename Socket,
+	std::size_t BufferSize,
+	typename std::enable_if<is_shared_ptr<Socket>::value, void>::type* = nullptr>
+std::string ReadFromSocket(Socket& socket)
+{
+	std::string buffer(BufferSize, ' ');
+	std::size_t totalBytesRead{};
+
+	try
+	{
+		while (totalBytesRead != BufferSize)
+		{
+			totalBytesRead += socket->read_some(asio::buffer(buffer.data() + totalBytesRead,
+															 BufferSize - totalBytesRead));
+		}
+		return buffer;
+	}
+	catch (const system::system_error& e)
+	{
+		std::stringstream msg;
+		msg << "Failed to read to socket. Error code = "
+			<< ". Message: " << std::string(e.what());
+		throw std::runtime_error(msg.str());
+	}
+}
+
+template<
+	typename Socket,
+	std::size_t BufferSize,
+	typename std::enable_if<!is_shared_ptr<Socket>::value, void>::type* = nullptr>
+std::string ReadFromSocketInSingleCall(Socket& socket)
+{
+	std::string buffer(BufferSize, ' ');
+	try
+	{
+		asio::read(socket, asio::buffer(buffer.data(), BufferSize));
+		return buffer;
+	}
+	catch (const system::system_error& e)
+	{
+		std::stringstream msg;
+		msg << "Failed to read to socket. Error code = "
+			<< ". Message: " << std::string(e.what());
+		throw std::runtime_error(msg.str());
+	}
+}
+
+template<
+	typename Socket,
+	std::size_t BufferSize,
+	typename std::enable_if<is_shared_ptr<Socket>::value, void>::type* = nullptr>
+std::string ReadFromSocketInSingleCall(Socket& socket)
+{
+	std::string buffer(BufferSize, ' ');
+	try
+	{
+		asio::read(*socket, asio::buffer(buffer.data(), BufferSize));
+		return buffer;
+	}
+	catch (const system::system_error& e)
+	{
+		std::stringstream msg;
+		msg << "Failed to read to socket. Error code = "
 			<< ". Message: " << std::string(e.what());
 		throw std::runtime_error(msg.str());
 	}

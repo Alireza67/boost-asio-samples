@@ -47,9 +47,19 @@ TEST(server_client, test_read_write)
 
 	auto serverSocket = future.get();
 	
-	std::string msg(1024, 'a');
+	constexpr size_t size{1024};
+	std::string msg(size, 'a');
+	std::string msg2(size, 'a');
 	EXPECT_NO_THROW(WriteToSocket(serverSocket, msg));
 	EXPECT_NO_THROW(WriteToSocket(clientSocket, msg));
-	EXPECT_EQ(1024, WriteToSocketInSingleCall(serverSocket, msg));
-	EXPECT_EQ(1024, WriteToSocketInSingleCall(clientSocket, msg));
+	auto res = ReadFromSocket<decltype(serverSocket), size>(serverSocket);
+	EXPECT_EQ(msg, res);
+	res = ReadFromSocket<decltype(clientSocket), size>(clientSocket);
+	EXPECT_EQ(msg, res);
+	EXPECT_EQ(1024, WriteToSocketInSingleCall(serverSocket, msg2));
+	EXPECT_EQ(1024, WriteToSocketInSingleCall(clientSocket, msg2));
+	res = ReadFromSocketInSingleCall<decltype(serverSocket), size>(serverSocket);
+	EXPECT_EQ(msg2, res);
+	res = ReadFromSocketInSingleCall<decltype(clientSocket), size>(clientSocket);
+	EXPECT_EQ(msg2, res);
 }
