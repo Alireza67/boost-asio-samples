@@ -214,18 +214,18 @@ std::string ReadFromSocketInSingleCall(Socket& socket)
 template<
 	typename Socket,
 	char Delimiter,
-	typename = std::enable_if_t<std::is_same_v<Socket, asio::ip::tcp::socket> ||  
-	std::is_same_v<Socket, std::shared_ptr<asio::ip::tcp::socket>>>>
+	typename = std::enable_if_t<is_shared_ptr<Socket>::value ||
+	!is_shared_ptr<Socket>::value>>
 std::string ReadFromSocketByDelimiter(Socket& socket)
 {
 	asio::streambuf buffer;
 	try
 	{
-		if constexpr (std::is_same_v<Socket, asio::ip::tcp::socket>)
+		if constexpr (!is_shared_ptr<Socket>::value)
 		{
 			asio::read_until(socket, buffer, Delimiter);
 		}
-		else if constexpr (std::is_same_v<Socket, std::shared_ptr<asio::ip::tcp::socket>>)
+		else if constexpr (is_shared_ptr<Socket>::value)
 		{
 			asio::read_until(*socket, buffer, Delimiter);
 		}
