@@ -42,7 +42,7 @@ WriteToSocket(Socket& socket, Buffer& buffer)
 		while (totalByteWritten != buffer.size())
 		{
 			totalByteWritten += socket.write_some(asio::buffer(buffer.data() + totalByteWritten,
-				buffer.size() - totalByteWritten));
+															   buffer.size() - totalByteWritten));
 		}
 	}
 	catch (const system::system_error& e)
@@ -64,8 +64,40 @@ WriteToSocket(Socket& socket, Buffer& buffer)
 		while (totalByteWritten != buffer.size())
 		{
 			totalByteWritten += socket->write_some(asio::buffer(buffer.data() + totalByteWritten,
-				buffer.size() - totalByteWritten));
+																buffer.size() - totalByteWritten));
 		}
+	}
+	catch (const system::system_error& e)
+	{
+		std::stringstream msg;
+		msg << "Failed to write to socket. Error code = "
+			<< ". Message: " << std::string(e.what());
+		throw std::runtime_error(msg.str());
+	}
+}
+
+template<typename Socket, typename Buffer, typename std::enable_if<!is_shared_ptr<Socket>::value, void>::type* = nullptr>
+std::size_t WriteToSocketInSingleCall(Socket& socket, Buffer& buffer)
+{
+	try
+	{
+		return asio::write(socket, asio::buffer(buffer));
+	}
+	catch (const system::system_error& e)
+	{
+		std::stringstream msg;
+		msg << "Failed to write to socket. Error code = "
+			<< ". Message: " << std::string(e.what());
+		throw std::runtime_error(msg.str());
+	}
+}
+
+template<typename Socket, typename Buffer, typename std::enable_if<is_shared_ptr<Socket>::value, void>::type* = nullptr>
+std::size_t WriteToSocketInSingleCall(Socket& socket, Buffer& buffer)
+{
+	try
+	{
+		return asio::write(*socket, asio::buffer(buffer));
 	}
 	catch (const system::system_error& e)
 	{

@@ -35,7 +35,8 @@ TEST(server_client, test_read_write)
 	{
 		try
 		{
-			clientSocket = std::make_shared<asio::ip::tcp::socket>(GetConnectedSocket<asio::ip::tcp>(ioc, ip, port));
+			if(!clientSocket)
+				clientSocket = std::make_shared<asio::ip::tcp::socket>(GetConnectedSocket<asio::ip::tcp>(ioc, ip, port));
 
 		}
 		catch (const std::exception&)
@@ -49,4 +50,6 @@ TEST(server_client, test_read_write)
 	std::string msg(1024, 'a');
 	EXPECT_NO_THROW(WriteToSocket(serverSocket, msg));
 	EXPECT_NO_THROW(WriteToSocket(clientSocket, msg));
+	EXPECT_EQ(1024, WriteToSocketInSingleCall(serverSocket, msg));
+	EXPECT_EQ(1024, WriteToSocketInSingleCall(clientSocket, msg));
 }
