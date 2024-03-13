@@ -210,3 +210,36 @@ std::string ReadFromSocketInSingleCall(Socket& socket)
 		throw std::runtime_error(msg.str());
 	}
 }
+
+template<
+	typename Socket,
+	char Delimiter,
+	typename = std::enable_if_t<std::is_same_v<Socket, asio::ip::tcp::socket> ||  
+	std::is_same_v<Socket, std::shared_ptr<asio::ip::tcp::socket>>>>
+std::string ReadFromSocketByDelimiter(Socket& socket)
+{
+	asio::streambuf buffer;
+	try
+	{
+		if constexpr (std::is_same_v<Socket, asio::ip::tcp::socket>)
+		{
+			asio::read_until(socket, buffer, Delimiter);
+		}
+		else if constexpr (std::is_same_v<Socket, std::shared_ptr<asio::ip::tcp::socket>>)
+		{
+			asio::read_until(*socket, buffer, Delimiter);
+		}
+
+		std::string output;
+		std::istream input(&buffer);
+		std::getline(input, output, Delimiter);
+		return output;
+	}
+	catch (const system::system_error& e)
+	{
+		std::stringstream msg;
+		msg << "Failed to read to socket. Error code = "
+			<< ". Message: " << std::string(e.what());
+		throw std::runtime_error(msg.str());
+	}
+}

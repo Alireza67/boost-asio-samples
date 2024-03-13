@@ -50,16 +50,30 @@ TEST(server_client, test_read_write)
 	constexpr size_t size{1024};
 	std::string msg(size, 'a');
 	std::string msg2(size, 'a');
+	const std::string msg3{"abcdef@ghijk"};
+	std::string target{"abcdef"};
+
 	EXPECT_NO_THROW(WriteToSocket(serverSocket, msg));
 	EXPECT_NO_THROW(WriteToSocket(clientSocket, msg));
+
 	auto res = ReadFromSocket<decltype(serverSocket), size>(serverSocket);
 	EXPECT_EQ(msg, res);
 	res = ReadFromSocket<decltype(clientSocket), size>(clientSocket);
 	EXPECT_EQ(msg, res);
+
 	EXPECT_EQ(1024, WriteToSocketInSingleCall(serverSocket, msg2));
 	EXPECT_EQ(1024, WriteToSocketInSingleCall(clientSocket, msg2));
+
 	res = ReadFromSocketInSingleCall<decltype(serverSocket), size>(serverSocket);
 	EXPECT_EQ(msg2, res);
 	res = ReadFromSocketInSingleCall<decltype(clientSocket), size>(clientSocket);
 	EXPECT_EQ(msg2, res);
+
+	EXPECT_EQ(msg3.size(), WriteToSocketInSingleCall(serverSocket, msg3));
+	EXPECT_EQ(msg3.size(), WriteToSocketInSingleCall(clientSocket, msg3));
+
+	res = ReadFromSocketByDelimiter<decltype(serverSocket), '@'>(serverSocket);
+	EXPECT_EQ(target, res);
+	res = ReadFromSocketByDelimiter<decltype(clientSocket), '@'>(clientSocket);
+	EXPECT_EQ(target, res);
 }
