@@ -21,8 +21,7 @@ TEST(server_client, runServer_runClient)
 
 void Callback(
 	const system::error_code& ec,
-	std::size_t transferredByte,
-	std::promise<size_t> promise)
+	std::size_t transferredByte)
 {
 	if (ec.value() != 0) [[unlikely]]
 	{
@@ -30,10 +29,8 @@ void Callback(
 		msg << "Error occured! Error code = "
 			<< ec.value()
 			<< ". Message: " << ec.message();
-		promise.set_exception(std::make_exception_ptr(std::runtime_error(msg.str())));
+		throw std::runtime_error(msg.str());
 	}
-
-	promise.set_value(transferredByte);
 }
 
 TEST(server_client, test_read_write)
@@ -96,4 +93,5 @@ TEST(server_client, test_read_write)
 	EXPECT_EQ(target, res);
 
 	WriteAsync(serverSocket, msg4, Callback);
+	ioc.run();
 }
