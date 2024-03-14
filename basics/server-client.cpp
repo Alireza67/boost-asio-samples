@@ -19,6 +19,23 @@ TEST(server_client, runServer_runClient)
 	SUCCEED();
 }
 
+void Callback(
+	const system::error_code& ec,
+	std::size_t transferredByte,
+	std::promise<size_t> promise)
+{
+	if (ec.value() != 0) [[unlikely]]
+	{
+		std::stringstream msg;
+		msg << "Error occured! Error code = "
+			<< ec.value()
+			<< ". Message: " << ec.message();
+		promise.set_exception(std::make_exception_ptr(std::runtime_error(msg.str())));
+	}
+
+	promise.set_value(transferredByte);
+}
+
 TEST(server_client, test_read_write)
 {
 	auto ip = "127.0.0.1"s;
@@ -49,8 +66,9 @@ TEST(server_client, test_read_write)
 	
 	constexpr size_t size{1024};
 	std::string msg(size, 'a');
-	std::string msg2(size, 'a');
+	std::string msg2(size, 'b');
 	const std::string msg3{"abcdef@ghijk"};
+	std::string msg4(size, 'c');
 	std::string target{"abcdef"};
 
 	EXPECT_NO_THROW(WriteToSocket(serverSocket, msg));
@@ -76,4 +94,6 @@ TEST(server_client, test_read_write)
 	EXPECT_EQ(target, res);
 	res = ReadFromSocketByDelimiter<decltype(clientSocket), '@'>(clientSocket);
 	EXPECT_EQ(target, res);
+
+	WriteAsync(serverSocket, msg4, Callback);
 }

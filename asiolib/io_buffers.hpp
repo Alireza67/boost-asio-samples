@@ -243,3 +243,26 @@ std::string ReadFromSocketByDelimiter(Socket& socket)
 		throw std::runtime_error(msg.str());
 	}
 }
+
+template<
+	typename Socket,
+	typename Buffer,
+	typename Callback,
+	typename = std::enable_if_t<is_shared_ptr<Socket>::value || !is_shared_ptr<Socket>::value>>
+	void WriteAsync(Socket& socket, Buffer& buffer, Callback callback)
+{
+	if constexpr (!is_shared_ptr<Socket>::value)
+	{
+		asio::async_write(
+			socket, 
+			asio::buffer(buffer.data(), buffer.size()), 
+			std::bind(callback, std::placeholders::_1, std::placeholders::_2));
+	}
+	else
+	{
+		asio::async_write(
+			*socket,
+			asio::buffer(buffer.data(), buffer.size()),
+			std::bind(callback, std::placeholders::_1, std::placeholders::_2));
+	}
+}
