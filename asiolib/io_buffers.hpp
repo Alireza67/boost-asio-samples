@@ -250,49 +250,13 @@ struct Session {
 	std::size_t total_bytes_written;
 };
 
-
-inline void Callback2(
-	const boost::system::error_code& ec,
-	std::size_t bytes_transferred)
-{
-	if (ec.value() != 0)
-	{
-		std::stringstream msg;
-		msg << "Error occured! Error code = "
-			<< ec.value()
-			<< ". Message: " << ec.message();
-		throw std::runtime_error(msg.str());
-	}
-}
-
-inline void Callback(
-	const boost::system::error_code& ec,
-	std::size_t bytes_transferred,
-	std::shared_ptr<asio::ip::tcp::socket> socket)
-{
-	if (ec.value() != 0)
-	{
-		std::stringstream msg;
-		msg << "Error occured! Error code = "
-			<< ec.value()
-			<< ". Message: " << ec.message();
-		throw std::runtime_error(msg.str());
-	}
-
-	boost::asio::streambuf readBuffer;
-	boost::asio::streambuf::mutable_buffers_type bufs = readBuffer.prepare(1024);
-	asio::async_write(
-		*socket,
-		bufs,
-		std::bind(Callback2,
-			std::placeholders::_1,
-			std::placeholders::_2));
-}
-
 inline void WriteAsync(
 	std::shared_ptr<asio::ip::tcp::socket> senderSocket,
 	std::shared_ptr<asio::ip::tcp::socket> receiverSocket,
-	std::string& buffer)
+	std::string& buffer,
+	std::function<void(const boost::system::error_code&,
+		std::size_t,
+		std::shared_ptr<asio::ip::tcp::socket>)> Callback)
 {
 	asio::async_write(
 		*senderSocket,
@@ -300,5 +264,5 @@ inline void WriteAsync(
 		std::bind(Callback,
 			std::placeholders::_1,
 			std::placeholders::_2,
-			std::move(receiverSocket)));
+			receiverSocket));
 }

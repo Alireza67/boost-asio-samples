@@ -19,6 +19,53 @@ TEST(server_client, runServer_runClient)
 	SUCCEED();
 }
 
+inline void Callback2(
+	const boost::system::error_code& ec,
+	std::size_t bytes_transferred)
+{
+	if (ec.value() != 0)
+	{
+		if (ec == asio::error::operation_aborted)
+		{
+			EXPECT_EQ("995: The I/O operation has been aborted because of \
+either a thread exit or an application request"s, 
+				std::to_string(ec.value()) + ": "s + ec.message());
+			return;
+		}
+
+		std::stringstream msg;
+		msg << "Error occured! Error code = "
+			<< ec.value()
+			<< ". Message: " << ec.message();
+		throw std::runtime_error(msg.str());
+	}
+	EXPECT_EQ(1024, bytes_transferred);
+}
+
+
+inline void Callback(
+	const boost::system::error_code& ec,
+	std::size_t bytes_transferred,
+	std::shared_ptr<asio::ip::tcp::socket> socket)
+{
+	if (ec.value() != 0)
+	{
+		std::stringstream msg;
+		msg << "Error occured! Error code = "
+			<< ec.value()
+			<< ". Message: " << ec.message();
+		throw std::runtime_error(msg.str());
+	}
+
+	boost::asio::streambuf readBuffer;
+	boost::asio::streambuf::mutable_buffers_type bufs = readBuffer.prepare(1024);
+	asio::async_read(
+		*socket,
+		bufs,
+		std::bind(Callback2,
+			std::placeholders::_1,
+			std::placeholders::_2));
+}
 TEST(server_client, test_read_write)
 {
 	auto ip = "127.0.0.1"s;
@@ -79,6 +126,13 @@ TEST(server_client, test_read_write)
 	res = ReadFromSocketByDelimiter<decltype(clientSocket), '@'>(clientSocket);
 	EXPECT_EQ(target, res);
 
-	WriteAsync(serverSocket, clientSocket, msg4);
+	WriteAsync(serverSocket, clientSocket, msg4, Callback);
 	ioc.run();
+	ioc.restart();
+	WriteAsync(serverSocket, serverSocket, msg4, Callback);
+	auto tt = std::jthread([&ioc]() {
+		ioc.run();
+		});
+	std::this_thread::sleep_for(1s);
+	serverSocket->cancel();
 }
