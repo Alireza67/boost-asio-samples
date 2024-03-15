@@ -32,9 +32,9 @@ struct is_shared_ptr : std::false_type {};
 template<typename T>
 struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {};
 
-template<typename Socket, typename Buffer>
-typename std::enable_if<!is_shared_ptr<Socket>::value>::type
-WriteToSocket(Socket& socket, Buffer& buffer)
+template<typename SenderSocket, typename Buffer>
+typename std::enable_if<!is_shared_ptr<SenderSocket>::value>::type
+WriteToSocket(SenderSocket& socket, Buffer& buffer)
 {
 	std::size_t totalByteWritten{};
 	try
@@ -54,9 +54,9 @@ WriteToSocket(Socket& socket, Buffer& buffer)
 	}
 }
 
-template<typename Socket, typename Buffer>
-typename std::enable_if<is_shared_ptr<Socket>::value>::type
-WriteToSocket(Socket& socket, Buffer& buffer)
+template<typename SenderSocket, typename Buffer>
+typename std::enable_if<is_shared_ptr<SenderSocket>::value>::type
+WriteToSocket(SenderSocket& socket, Buffer& buffer)
 {
 	std::size_t totalByteWritten{};
 	try
@@ -77,10 +77,10 @@ WriteToSocket(Socket& socket, Buffer& buffer)
 }
 
 template<
-	typename Socket, 
+	typename SenderSocket, 
 	typename Buffer, 
-	typename std::enable_if<!is_shared_ptr<Socket>::value, void>::type* = nullptr>
-std::size_t WriteToSocketInSingleCall(Socket& socket, Buffer& buffer)
+	typename std::enable_if<!is_shared_ptr<SenderSocket>::value, void>::type* = nullptr>
+std::size_t WriteToSocketInSingleCall(SenderSocket& socket, Buffer& buffer)
 {
 	try
 	{
@@ -96,10 +96,10 @@ std::size_t WriteToSocketInSingleCall(Socket& socket, Buffer& buffer)
 }
 
 template<
-	typename Socket, 
+	typename SenderSocket, 
 	typename Buffer, 
-	typename std::enable_if<is_shared_ptr<Socket>::value, void>::type* = nullptr>
-std::size_t WriteToSocketInSingleCall(Socket& socket, Buffer& buffer)
+	typename std::enable_if<is_shared_ptr<SenderSocket>::value, void>::type* = nullptr>
+std::size_t WriteToSocketInSingleCall(SenderSocket& socket, Buffer& buffer)
 {
 	try
 	{
@@ -116,10 +116,10 @@ std::size_t WriteToSocketInSingleCall(Socket& socket, Buffer& buffer)
 
 
 template<
-	typename Socket,
+	typename SenderSocket,
 	std::size_t BufferSize,
-	typename std::enable_if<!is_shared_ptr<Socket>::value, void>::type* = nullptr>
-std::string ReadFromSocket(Socket& socket)
+	typename std::enable_if<!is_shared_ptr<SenderSocket>::value, void>::type* = nullptr>
+std::string ReadFromSocket(SenderSocket& socket)
 {
 	std::string buffer(BufferSize, ' ');
 	std::size_t totalBytesRead{};
@@ -143,10 +143,10 @@ std::string ReadFromSocket(Socket& socket)
 }
 
 template<
-	typename Socket,
+	typename SenderSocket,
 	std::size_t BufferSize,
-	typename std::enable_if<is_shared_ptr<Socket>::value, void>::type* = nullptr>
-std::string ReadFromSocket(Socket& socket)
+	typename std::enable_if<is_shared_ptr<SenderSocket>::value, void>::type* = nullptr>
+std::string ReadFromSocket(SenderSocket& socket)
 {
 	std::string buffer(BufferSize, ' ');
 	std::size_t totalBytesRead{};
@@ -170,10 +170,10 @@ std::string ReadFromSocket(Socket& socket)
 }
 
 template<
-	typename Socket,
+	typename SenderSocket,
 	std::size_t BufferSize,
-	typename std::enable_if<!is_shared_ptr<Socket>::value, void>::type* = nullptr>
-std::string ReadFromSocketInSingleCall(Socket& socket)
+	typename std::enable_if<!is_shared_ptr<SenderSocket>::value, void>::type* = nullptr>
+std::string ReadFromSocketInSingleCall(SenderSocket& socket)
 {
 	std::string buffer(BufferSize, ' ');
 	try
@@ -191,10 +191,10 @@ std::string ReadFromSocketInSingleCall(Socket& socket)
 }
 
 template<
-	typename Socket,
+	typename SenderSocket,
 	std::size_t BufferSize,
-	typename std::enable_if<is_shared_ptr<Socket>::value, void>::type* = nullptr>
-std::string ReadFromSocketInSingleCall(Socket& socket)
+	typename std::enable_if<is_shared_ptr<SenderSocket>::value, void>::type* = nullptr>
+std::string ReadFromSocketInSingleCall(SenderSocket& socket)
 {
 	std::string buffer(BufferSize, ' ');
 	try
@@ -212,20 +212,20 @@ std::string ReadFromSocketInSingleCall(Socket& socket)
 }
 
 template<
-	typename Socket,
+	typename SenderSocket,
 	char Delimiter,
-	typename = std::enable_if_t<is_shared_ptr<Socket>::value ||
-	!is_shared_ptr<Socket>::value>>
-std::string ReadFromSocketByDelimiter(Socket& socket)
+	typename = std::enable_if_t<is_shared_ptr<SenderSocket>::value ||
+	!is_shared_ptr<SenderSocket>::value>>
+std::string ReadFromSocketByDelimiter(SenderSocket& socket)
 {
 	asio::streambuf buffer;
 	try
 	{
-		if constexpr (!is_shared_ptr<Socket>::value)
+		if constexpr (!is_shared_ptr<SenderSocket>::value)
 		{
 			asio::read_until(socket, buffer, Delimiter);
 		}
-		else if constexpr (is_shared_ptr<Socket>::value)
+		else if constexpr (is_shared_ptr<SenderSocket>::value)
 		{
 			asio::read_until(*socket, buffer, Delimiter);
 		}
@@ -244,25 +244,92 @@ std::string ReadFromSocketByDelimiter(Socket& socket)
 	}
 }
 
-template<
-	typename Socket,
-	typename Buffer,
-	typename Callback,
-	typename = std::enable_if_t<is_shared_ptr<Socket>::value || !is_shared_ptr<Socket>::value>>
-	void WriteAsync(Socket& socket, Buffer& buffer, Callback callback)
+struct Session {
+	std::shared_ptr<asio::ip::tcp::socket> sock;
+	std::string buf;
+	std::size_t total_bytes_written;
+};
+
+
+inline void Callback2(
+	const boost::system::error_code& ec,
+	std::size_t bytes_transferred)
 {
-	if constexpr (!is_shared_ptr<Socket>::value)
+	if (ec.value() != 0)
+	{
+		std::stringstream msg;
+		msg << "Error occured! Error code = "
+			<< ec.value()
+			<< ". Message: " << ec.message();
+		throw std::runtime_error(msg.str());
+	}
+}
+
+template<
+	typename ReceiverSocket,
+	typename = std::enable_if_t<!is_shared_ptr<ReceiverSocket>::value || is_shared_ptr<ReceiverSocket>::value>>
+inline void Callback(
+	const boost::system::error_code& ec,
+	std::size_t bytes_transferred,
+	ReceiverSocket& socket)
+{
+	if (ec.value() != 0)
+	{
+		std::stringstream msg;
+		msg << "Error occured! Error code = "
+			<< ec.value()
+			<< ". Message: " << ec.message();
+		throw std::runtime_error(msg.str());
+	}
+	asio::streambuf msg;
+
+	if constexpr (is_shared_ptr<ReceiverSocket>::value)
+	{
+		asio::async_read(*socket,
+			msg,
+			std::bind(Callback2,
+				std::placeholders::_1,
+				std::placeholders::_2));
+	}
+	else if constexpr (!is_shared_ptr<ReceiverSocket>::value)
+	{
+		asio::async_read(socket,
+			msg,
+			std::bind(Callback2,
+				std::placeholders::_1,
+				std::placeholders::_2));
+	}
+}
+
+template<
+	typename SenderSocket,
+	typename ReceiverSocket,
+	typename = std::enable_if_t<!is_shared_ptr<SenderSocket>::value || is_shared_ptr<SenderSocket>::value>,
+	typename = std::enable_if_t<!is_shared_ptr<ReceiverSocket>::value || is_shared_ptr<ReceiverSocket>::value>>
+	inline void WriteAsync(
+		SenderSocket& senderSocket,
+		ReceiverSocket& receiverSocket,
+		std::string& buffer)
+{
+	using T = typename std::remove_reference<decltype(receiverSocket)>::type;
+	if constexpr (!is_shared_ptr<SenderSocket>::value)
 	{
 		asio::async_write(
-			socket, 
-			asio::buffer(buffer.data(), buffer.size()), 
-			std::bind(callback, std::placeholders::_1, std::placeholders::_2));
+			senderSocket,
+			asio::buffer(buffer),
+			std::bind(Callback<T>,
+				std::placeholders::_1,
+				std::placeholders::_2,
+				receiverSocket));
 	}
 	else
-	{
+	{		
 		asio::async_write(
-			*socket,
-			asio::buffer(buffer.data(), buffer.size()),
-			std::bind(callback, std::placeholders::_1, std::placeholders::_2));
+			*senderSocket,
+			asio::buffer(buffer),
+			std::bind(Callback<T>,
+				std::placeholders::_1,
+				std::placeholders::_2,
+				receiverSocket));
 	}
 }

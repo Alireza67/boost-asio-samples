@@ -26,10 +26,10 @@ inline Acceptor CreateAndOpenAcceptor(asio::io_service& ios, asio::ip::tcp proto
 template<typename Protocol>
 inline typename Protocol::socket CreateSocket(asio::io_service& ios)
 {
-	using Socket = typename Protocol::socket;
+	using SenderSocket = typename Protocol::socket;
 	try
 	{
-		Socket socket(ios);
+		SenderSocket socket(ios);
 		return socket;
 	}
 	catch (boost::system::system_error& e) {
@@ -43,10 +43,10 @@ inline typename Protocol::socket CreateSocket(asio::io_service& ios)
 template<typename Protocol>
 inline typename Protocol::socket CreateAndOpenSocket(asio::io_service& ios, Protocol protocol)
 {
-	using Socket = typename Protocol::socket;
+	using SenderSocket = typename Protocol::socket;
 	try
 	{
-		Socket socket(ios, protocol);
+		SenderSocket socket(ios, protocol);
 		return socket;
 	}
 	catch (boost::system::system_error& e) {
@@ -60,10 +60,10 @@ inline typename Protocol::socket CreateAndOpenSocket(asio::io_service& ios, Prot
 template<typename Protocol>
 inline typename Protocol::socket CreateAndOpenSocket(asio::io_service& ios)
 {
-	using Socket = typename Protocol::socket;
+	using SenderSocket = typename Protocol::socket;
 
 	Protocol protocol = Protocol::v4();
-	Socket socket(ios);
+	SenderSocket socket(ios);
 
 	boost::system::error_code ec;
 	socket.open(protocol, ec);

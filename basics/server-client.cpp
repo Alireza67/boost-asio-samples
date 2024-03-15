@@ -19,20 +19,6 @@ TEST(server_client, runServer_runClient)
 	SUCCEED();
 }
 
-void Callback(
-	const system::error_code& ec,
-	std::size_t transferredByte)
-{
-	if (ec.value() != 0) [[unlikely]]
-	{
-		std::stringstream msg;
-		msg << "Error occured! Error code = "
-			<< ec.value()
-			<< ". Message: " << ec.message();
-		throw std::runtime_error(msg.str());
-	}
-}
-
 TEST(server_client, test_read_write)
 {
 	auto ip = "127.0.0.1"s;
@@ -92,6 +78,7 @@ TEST(server_client, test_read_write)
 	res = ReadFromSocketByDelimiter<decltype(clientSocket), '@'>(clientSocket);
 	EXPECT_EQ(target, res);
 
-	WriteAsync(serverSocket, msg4, Callback);
+	WriteAsync(serverSocket, clientSocket, msg4);
 	ioc.run();
+
 }

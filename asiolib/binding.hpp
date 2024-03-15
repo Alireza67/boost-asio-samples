@@ -20,8 +20,8 @@ inline void Bind(Acceptor& acceptor, Endpoint& endpoint)
 	}
 }
 
-template<typename Socket, typename Endpoint>
-inline void Connect(Socket& socket, Endpoint& endpoint)
+template<typename SenderSocket, typename Endpoint>
+inline void Connect(SenderSocket& socket, Endpoint& endpoint)
 {
 	try
 	{
