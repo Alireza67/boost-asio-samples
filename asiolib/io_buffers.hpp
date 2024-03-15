@@ -265,13 +265,10 @@ inline void Callback2(
 	}
 }
 
-template<
-	typename ReceiverSocket,
-	typename = std::enable_if_t<!is_shared_ptr<ReceiverSocket>::value || is_shared_ptr<ReceiverSocket>::value>>
 inline void Callback(
 	const boost::system::error_code& ec,
 	std::size_t bytes_transferred,
-	ReceiverSocket& socket)
+	std::shared_ptr<asio::ip::tcp::socket> socket)
 {
 	if (ec.value() != 0)
 	{
@@ -281,55 +278,27 @@ inline void Callback(
 			<< ". Message: " << ec.message();
 		throw std::runtime_error(msg.str());
 	}
-	asio::streambuf msg;
 
-	if constexpr (is_shared_ptr<ReceiverSocket>::value)
-	{
-		asio::async_read(*socket,
-			msg,
-			std::bind(Callback2,
-				std::placeholders::_1,
-				std::placeholders::_2));
-	}
-	else if constexpr (!is_shared_ptr<ReceiverSocket>::value)
-	{
-		asio::async_read(socket,
-			msg,
-			std::bind(Callback2,
-				std::placeholders::_1,
-				std::placeholders::_2));
-	}
+	boost::asio::streambuf readBuffer;
+	boost::asio::streambuf::mutable_buffers_type bufs = readBuffer.prepare(1024);
+	asio::async_write(
+		*socket,
+		bufs,
+		std::bind(Callback2,
+			std::placeholders::_1,
+			std::placeholders::_2));
 }
 
-template<
-	typename SenderSocket,
-	typename ReceiverSocket,
-	typename = std::enable_if_t<!is_shared_ptr<SenderSocket>::value || is_shared_ptr<SenderSocket>::value>,
-	typename = std::enable_if_t<!is_shared_ptr<ReceiverSocket>::value || is_shared_ptr<ReceiverSocket>::value>>
-	inline void WriteAsync(
-		SenderSocket& senderSocket,
-		ReceiverSocket& receiverSocket,
-		std::string& buffer)
+inline void WriteAsync(
+	std::shared_ptr<asio::ip::tcp::socket> senderSocket,
+	std::shared_ptr<asio::ip::tcp::socket> receiverSocket,
+	std::string& buffer)
 {
-	using T = typename std::remove_reference<decltype(receiverSocket)>::type;
-	if constexpr (!is_shared_ptr<SenderSocket>::value)
-	{
-		asio::async_write(
-			senderSocket,
-			asio::buffer(buffer),
-			std::bind(Callback<T>,
-				std::placeholders::_1,
-				std::placeholders::_2,
-				receiverSocket));
-	}
-	else
-	{		
-		asio::async_write(
-			*senderSocket,
-			asio::buffer(buffer),
-			std::bind(Callback<T>,
-				std::placeholders::_1,
-				std::placeholders::_2,
-				receiverSocket));
-	}
+	asio::async_write(
+		*senderSocket,
+		asio::buffer(buffer),
+		std::bind(Callback,
+			std::placeholders::_1,
+			std::placeholders::_2,
+			std::move(receiverSocket)));
 }

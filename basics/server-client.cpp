@@ -45,7 +45,8 @@ TEST(server_client, test_read_write)
 		}
 	}
 
-	auto serverSocket = future.get();
+	auto tmp = future.get();
+	std::shared_ptr<asio::ip::tcp::socket> serverSocket = std::make_shared<asio::ip::tcp::socket>(std::move(tmp));
 	
 	constexpr size_t size{1024};
 	std::string msg(size, 'a');
@@ -80,5 +81,4 @@ TEST(server_client, test_read_write)
 
 	WriteAsync(serverSocket, clientSocket, msg4);
 	ioc.run();
-
 }
