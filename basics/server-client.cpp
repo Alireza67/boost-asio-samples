@@ -66,25 +66,37 @@ inline void Callback(
 			std::placeholders::_1,
 			std::placeholders::_2));
 }
-TEST(server_client, test_read_write)
+
+class ClientServerScenario : public ::testing::Test
+{
+protected:
+	void SetUp();
+	void TearDown() override {};
+
+public:
+	asio::io_context ioc;
+	std::shared_ptr<asio::ip::tcp::socket> clientSocket{};
+	std::shared_ptr<asio::ip::tcp::socket> serverSocket{};
+};
+
+void ClientServerScenario::SetUp()
 {
 	auto ip = "127.0.0.1"s;
 	unsigned short port = 19871;
 	auto backlogSize = 10;
-	asio::io_context ioc;
 
 	std::promise<asio::ip::tcp::socket> promise{};
-	auto t = std::jthread(GetSingleClientSocket, std::ref(ioc), backlogSize, port, std::ref(promise));
+	auto t = std::jthread(GetSingleClientSocket, 
+		std::ref(ioc), backlogSize, port, std::ref(promise));
 	auto future = promise.get_future();
 
-	std::shared_ptr<asio::ip::tcp::socket> clientSocket{};
 	while (future.wait_for(1ms) == std::future_status::timeout)
 	{
 		try
 		{
-			if(!clientSocket)
-				clientSocket = std::make_shared<asio::ip::tcp::socket>(GetConnectedSocket<asio::ip::tcp>(ioc, ip, port));
-
+			if (!clientSocket)
+				clientSocket = std::make_shared<asio::ip::tcp::socket>(
+					GetConnectedSocket<asio::ip::tcp>(ioc, ip, port));
 		}
 		catch (const std::exception&)
 		{
@@ -93,14 +105,13 @@ TEST(server_client, test_read_write)
 	}
 
 	auto tmp = future.get();
-	std::shared_ptr<asio::ip::tcp::socket> serverSocket = std::make_shared<asio::ip::tcp::socket>(std::move(tmp));
-	
+	serverSocket = std::make_shared<asio::ip::tcp::socket>(std::move(tmp));
+}
+
+TEST_F(ClientServerScenario, write_read_some)
+{
 	constexpr size_t size{1024};
 	std::string msg(size, 'a');
-	std::string msg2(size, 'b');
-	const std::string msg3{"abcdef@ghijk"};
-	std::string msg4(size, 'c');
-	std::string target{"abcdef"};
 
 	EXPECT_NO_THROW(WriteToSocket(serverSocket, msg));
 	EXPECT_NO_THROW(WriteToSocket(clientSocket, msg));
@@ -109,28 +120,67 @@ TEST(server_client, test_read_write)
 	EXPECT_EQ(msg, res);
 	res = ReadFromSocket<decltype(clientSocket), size>(clientSocket);
 	EXPECT_EQ(msg, res);
+}
 
-	EXPECT_EQ(1024, WriteToSocketInSingleCall(serverSocket, msg2));
-	EXPECT_EQ(1024, WriteToSocketInSingleCall(clientSocket, msg2));
+TEST_F(ClientServerScenario, asio_read_write)
+{
+	constexpr size_t size{ 1024 };
+	std::string msg(size, 'b');
 
-	res = ReadFromSocketInSingleCall<decltype(serverSocket), size>(serverSocket);
-	EXPECT_EQ(msg2, res);
+	EXPECT_EQ(1024, WriteToSocketInSingleCall(serverSocket, msg));
+	EXPECT_EQ(1024, WriteToSocketInSingleCall(clientSocket, msg));
+
+	auto res = ReadFromSocketInSingleCall<decltype(serverSocket), size>(serverSocket);
+	EXPECT_EQ(msg, res);
 	res = ReadFromSocketInSingleCall<decltype(clientSocket), size>(clientSocket);
-	EXPECT_EQ(msg2, res);
+	EXPECT_EQ(msg, res);
+}
 
-	EXPECT_EQ(msg3.size(), WriteToSocketInSingleCall(serverSocket, msg3));
-	EXPECT_EQ(msg3.size(), WriteToSocketInSingleCall(clientSocket, msg3));
+TEST_F(ClientServerScenario, asio_read_until)
+{
+	constexpr size_t size{ 1024 };
+	const std::string msg{ "abcdef@ghijk" };
+	std::string msg2(size, 'c');
+	std::string target{ "abcdef" };
 
-	res = ReadFromSocketByDelimiter<decltype(serverSocket), '@'>(serverSocket);
+	EXPECT_EQ(msg.size(), WriteToSocketInSingleCall(serverSocket, msg));
+	EXPECT_EQ(msg.size(), WriteToSocketInSingleCall(clientSocket, msg));
+
+	auto res = ReadFromSocketByDelimiter<decltype(serverSocket), '@'>(serverSocket);
 	EXPECT_EQ(target, res);
 	res = ReadFromSocketByDelimiter<decltype(clientSocket), '@'>(clientSocket);
 	EXPECT_EQ(target, res);
 
-	WriteAsync(serverSocket, clientSocket, msg4, Callback);
+	WriteAsync(serverSocket, clientSocket, msg2, Callback);
 	ioc.run();
 	ioc.restart();
-	WriteAsync(serverSocket, serverSocket, msg4, Callback);
-	auto tt = std::jthread([&ioc]() {
+	WriteAsync(serverSocket, serverSocket, msg2, Callback);
+	auto tt = std::jthread([&]() {
+		ioc.run();
+		});
+	std::this_thread::sleep_for(1s);
+	serverSocket->cancel();
+}
+
+TEST_F(ClientServerScenario, read_write_async)
+{
+	constexpr size_t size{ 1024 };
+	std::string msg(size, 'c');
+
+	WriteAsync(serverSocket, clientSocket, msg, Callback);
+	ioc.run();
+}
+
+TEST_F(ClientServerScenario, cancel_async)
+{
+	constexpr size_t size{ 1024 };
+	std::string msg(size, 'c');
+
+	WriteAsync(serverSocket, clientSocket, msg, Callback);
+	ioc.run();
+	ioc.restart();
+	WriteAsync(serverSocket, serverSocket, msg, Callback);
+	auto tt = std::jthread([&]() {
 		ioc.run();
 		});
 	std::this_thread::sleep_for(1s);
