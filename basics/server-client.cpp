@@ -186,3 +186,25 @@ TEST_F(ClientServerScenario, cancel_async)
 	std::this_thread::sleep_for(1s);
 	serverSocket->cancel();
 }
+
+TEST_F(ClientServerScenario, shutdown_send)
+{
+	std::string request{ "Hello Bob!" };
+	std::string replay{ "Hi dear Alice!" };
+
+	auto clientFuture = std::async(
+		std::launch::async, 
+		SendRequestAndGetReplay<std::shared_ptr<asio::ip::tcp::socket>, std::string>, 
+		std::ref(clientSocket), std::ref(request));
+
+	auto serverFuture = std::async(
+		std::launch::async, 
+		GetRequestAndSendReplay<std::shared_ptr<asio::ip::tcp::socket>, std::string>,
+		std::ref(serverSocket), std::ref(replay));
+
+	auto serverReplay = clientFuture.get();
+	auto clientRequest = serverFuture.get();
+
+	EXPECT_EQ(replay, serverReplay);
+	EXPECT_EQ(request, clientRequest);
+}

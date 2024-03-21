@@ -266,3 +266,49 @@ inline void WriteAsync(
 			std::placeholders::_2,
 			receiverSocket));
 }
+
+template<
+	typename Socket,
+	typename Buffer,
+	typename = std::enable_if<is_shared_ptr<Socket>::value>>
+	std::string SendRequestAndGetReplay(Socket& sock, Buffer& buffer)
+{
+	asio::write(*sock, asio::buffer(buffer));
+	sock->shutdown(asio::socket_base::shutdown_send);
+
+	system::error_code ec;
+	asio::streambuf response;
+	asio::read(*sock, response, ec);
+	if (ec == asio::error::eof)
+	{
+		std::istream input(&response);
+		std::string output;
+		std::getline(input, output);
+		return output;
+	}
+	throw system::system_error(ec);
+}
+
+template<
+	typename Socket,
+	typename Buffer,
+	typename = std::enable_if<is_shared_ptr<Socket>::value>>
+	std::string GetRequestAndSendReplay(Socket& sock, Buffer& buffer)
+{
+	system::error_code ec;
+	asio::streambuf request;
+
+	asio::read(*sock, request, ec);
+	if (ec != asio::error::eof)
+	{
+		throw system::system_error(ec);
+	}
+
+	asio::write(*sock, asio::buffer(buffer));
+	sock->shutdown(asio::socket_base::shutdown_send);
+
+	std::istream input(&request);
+	std::string output;
+	std::getline(input, output);
+	return output;
+}
