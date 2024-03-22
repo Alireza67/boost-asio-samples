@@ -146,6 +146,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="servers.hpp" />
     <ClInclude Include="sockets.hpp" />
+    <ClInclude Include="tcp-client-async.hpp" />
     <ClInclude Include="tcp-client-sync.hpp" />
     <ClInclude Include="udp-client-sync.hpp" />
   </ItemGroup>
