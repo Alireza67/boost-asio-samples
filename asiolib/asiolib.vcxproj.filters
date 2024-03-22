@@ -39,6 +39,9 @@
     <ClInclude Include="tcp-client-sync.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="udp-client-sync.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
