@@ -26,7 +26,6 @@ template<typename Protocol, typename IpVersion>
 inline typename Protocol::endpoint CreateEndpoint(unsigned short port)
 {
 	using Endpoint = typename Protocol::endpoint;
-	boost::system::error_code ec;
 	asio::ip::address ip_address = IpVersion::any();
 	return Endpoint(ip_address, port);
 }

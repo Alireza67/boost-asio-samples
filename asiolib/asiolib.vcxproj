@@ -148,6 +148,7 @@
     <ClInclude Include="sockets.hpp" />
     <ClInclude Include="tcp-client-async.hpp" />
     <ClInclude Include="tcp-client-sync.hpp" />
+    <ClInclude Include="tcp-server-sync.hpp" />
     <ClInclude Include="udp-client-sync.hpp" />
   </ItemGroup>
   <ItemGroup>

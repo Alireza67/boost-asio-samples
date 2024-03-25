@@ -7,6 +7,15 @@ using namespace std::literals;
 
 using Acceptor = asio::ip::tcp::acceptor;
 
+inline Acceptor CreateAndOpenAcceptor(
+	asio::io_service& ios, 
+	asio::ip::tcp::endpoint endPoint)
+{
+	//implicitly binding
+	Acceptor acceptor(ios, endPoint);
+	return acceptor;
+}
+
 inline Acceptor CreateAndOpenAcceptor(asio::io_service& ios, asio::ip::tcp protocol)
 {
 	Acceptor acceptor(ios);
