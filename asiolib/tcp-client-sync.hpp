@@ -7,7 +7,7 @@ class SyncTCPClient
 {
 public:
 	SyncTCPClient(const std::string& ip, unsigned short port)
-		: endpoint_(CreateEndpoint<asio::ip::tcp>(ip, port)),
+		: endpoint_(std::move(CreateEndpoint<asio::ip::tcp>(ip, port))),
 		  socket_(CreateAndOpenSocket<asio::ip::tcp>(ioc_, endpoint_.protocol()))
 	{
 	}
@@ -53,6 +53,6 @@ private:
 
 private:
 	asio::io_context ioc_;
-	asio::ip::tcp::socket socket_;
 	asio::ip::tcp::endpoint endpoint_;
+	asio::ip::tcp::socket socket_;
 };

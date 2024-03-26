@@ -51,6 +51,7 @@
     <ClCompile Include="dns-resolve.cpp" />
     <ClCompile Include="server-client.cpp" />
     <ClCompile Include="socket.cpp" />
+    <ClCompile Include="tcp-client-server-sync.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

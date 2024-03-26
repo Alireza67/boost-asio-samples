@@ -32,17 +32,20 @@ public:
 		//simulate I/O operation
 		std::this_thread::sleep_for(1s);
 
-		asio::write(socket, asio::buffer(task_));
+		std::string output;
+		std::istream input(&buffer);
+		std::getline(input, output);
+		asio::write(socket, asio::buffer(task_ + output + "\n"));
 	}
 
 private:
 	std::string task_{};
 };
 
-class Acceptor
+class AcceptorCl
 {
 public:
-	Acceptor(
+	AcceptorCl(
 		Service& service, asio::io_context& ioc, 
 		asio::ip::tcp::endpoint& endPoint)
 		:service_(service), ioc_(ioc)
@@ -73,7 +76,12 @@ public:
 	explicit Server(Service& service, unsigned short port)
 	{
 		endPoint_ = CreateEndpoint<asio::ip::tcp, asio::ip::address_v4>(port);
-		acceptor_ = std::move(std::make_unique<Acceptor>(service, ioc_, endPoint_));
+		acceptor_ = std::move(std::make_unique<AcceptorCl>(service, ioc_, endPoint_));
+	}
+
+	virtual ~Server()
+	{
+		Stop();
 	}
 
 	void Start()
@@ -98,7 +106,7 @@ private:
 	asio::io_context ioc_;
 	asio::ip::tcp::endpoint endPoint_;
 	std::atomic<bool> liveFlag{ true };
-	std::unique_ptr<Acceptor> acceptor_{};
+	std::unique_ptr<AcceptorCl> acceptor_{};
 
 	void Run()
 	{
