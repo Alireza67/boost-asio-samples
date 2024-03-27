@@ -30,7 +30,8 @@ public:
 
 	std::string EmulateLongComputationOp(unsigned int duration_sec)
 	{
-		std::string request = "EMULATE_LONG_COMP_OP " + std::to_string(duration_sec) + '\n';
+		std::string request = "EMULATE_LONG_COMP_OP " + 
+			std::to_string(duration_sec) + '\n';
 		SendRequest(request);
 		return ReceiveResponse();
 	};

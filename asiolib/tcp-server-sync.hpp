@@ -38,6 +38,38 @@ public:
 		asio::write(socket, asio::buffer(task_ + output + "\n"));
 	}
 
+	void DetachHandle(std::shared_ptr<asio::ip::tcp::socket> socket)
+	{
+		auto t = std::thread([this, socket]() {
+			HandleRequest(socket);
+			});
+
+		t.detach();
+	}
+
+	void HandleRequest(std::shared_ptr<asio::ip::tcp::socket> socket)
+	{
+		asio::streambuf buffer;
+		asio::read_until(*socket, buffer, '\n');
+
+		//Simulate time consuming calculateion
+		auto counter{ 0 };
+		while (counter < 1'000'000)
+		{
+			++counter;
+		}
+
+		//simulate I/O operation
+		std::this_thread::sleep_for(1s);
+
+		std::string output;
+		std::istream input(&buffer);
+		std::getline(input, output);
+		asio::write(*socket, asio::buffer(task_ + output + "\n"));
+
+		delete this;
+	}
+
 private:
 	std::string task_{};
 };
@@ -70,13 +102,48 @@ private:
 	std::unique_ptr<asio::ip::tcp::acceptor> acceptor_{};
 };
 
+class ParallelAcceptor
+{
+public:
+	ParallelAcceptor(
+		asio::io_context& ioc,
+		asio::ip::tcp::endpoint& endPoint)
+		:ioc_(ioc)
+	{
+		acceptor_ = std::move(std::make_unique<asio::ip::tcp::acceptor>(
+			CreateAndOpenAcceptor(ioc, endPoint)));
+
+		acceptor_->listen(backlogSize_);
+	}
+
+	void Accept()
+	{
+		auto socket = std::make_shared<asio::ip::tcp::socket>(
+			CreateSocket<asio::ip::tcp>(ioc_));
+		acceptor_->accept(*socket);
+		(new ServiceFake("Task will be done: "))->DetachHandle(socket);
+	}
+
+private:
+	asio::io_context& ioc_;
+	uint8_t backlogSize_{ 10 };
+	std::unique_ptr<asio::ip::tcp::acceptor> acceptor_{};
+};
+
+template<typename T>
 class Server
 {
 public:
 	explicit Server(Service& service, unsigned short port)
 	{
 		endPoint_ = CreateEndpoint<asio::ip::tcp, asio::ip::address_v4>(port);
-		acceptor_ = std::move(std::make_unique<AcceptorCl>(service, ioc_, endPoint_));
+		acceptor_ = std::move(std::make_unique<T>(service, ioc_, endPoint_));
+	}
+
+	explicit Server(unsigned short port)
+	{
+		endPoint_ = CreateEndpoint<asio::ip::tcp, asio::ip::address_v4>(port);
+		acceptor_ = std::move(std::make_unique<T>(ioc_, endPoint_));
 	}
 
 	virtual ~Server()
@@ -106,7 +173,7 @@ private:
 	asio::io_context ioc_;
 	asio::ip::tcp::endpoint endPoint_;
 	std::atomic<bool> liveFlag{ true };
-	std::unique_ptr<AcceptorCl> acceptor_{};
+	std::unique_ptr<T> acceptor_{};
 
 	void Run()
 	{
