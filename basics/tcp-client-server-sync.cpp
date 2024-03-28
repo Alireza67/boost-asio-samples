@@ -3,7 +3,7 @@
 #include "asiolib/tcp-server-sync.hpp"
 #include "asiolib/tcp-client-sync.hpp"
 
-TEST(TCP_SYNC, tcp_server_client_async)
+TEST(TCP_SYNC, tcp_server_client_sync)
 {
 	auto port = 6969;
 	auto ip = "127.0.0.1"s;
@@ -34,7 +34,7 @@ TEST(TCP_SYNC, tcp_server_client_async)
 	f1.get();
 }
 
-TEST(TCP_SYNC, tcp_parallel_server_client_async)
+TEST(TCP_SYNC, tcp_parallel_server_client_sync)
 {
 	auto port = 6969;
 	auto ip = "127.0.0.1"s;

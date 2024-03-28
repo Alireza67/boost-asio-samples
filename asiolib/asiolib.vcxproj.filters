@@ -48,6 +48,9 @@
     <ClInclude Include="tcp-server-sync.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="tcp-server-async.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

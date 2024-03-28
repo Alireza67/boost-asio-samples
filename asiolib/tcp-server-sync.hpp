@@ -4,7 +4,6 @@
 #include "sockets.hpp"
 #include "binding.hpp"
 
-
 class Service
 {
 public:
@@ -17,7 +16,7 @@ public:
 	explicit ServiceFake(std::string msg)
 		:task_(std::move(msg)){}
 
-	void HandleRequest(asio::ip::tcp::socket& socket)
+	void HandleRequest(asio::ip::tcp::socket& socket) override
 	{
 		asio::streambuf buffer;
 		asio::read_until(socket, buffer, '\n');
