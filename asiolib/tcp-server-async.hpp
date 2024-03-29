@@ -14,10 +14,8 @@ class ServiceFakeAsync : public AsyncService
 {
 public:
 	explicit ServiceFakeAsync(
-		std::string msg,
 		std::shared_ptr<asio::ip::tcp::socket> socket)
-		:task_(std::move(msg)),
-		socket_(std::move(socket)) {}
+		:socket_(std::move(socket)) {}
 
 	void HandleRequest() override
 	{
@@ -30,7 +28,6 @@ public:
 	}
 
 private:
-	std::string task_{};
 	std::string response{};
 	asio::streambuf buffer_;
 	std::shared_ptr<asio::ip::tcp::socket> socket_{};
@@ -85,4 +82,62 @@ private:
 	{
 		Clean();
 	}
+};
+
+class AsyncAcceptor
+{
+public:
+	AsyncAcceptor(asio::io_context& ioc, asio::ip::tcp::endpoint& endPoint)
+		:ioc_(ioc),
+		acceptor_(asio::ip::tcp::acceptor(ioc, endPoint))
+	{
+	}
+
+	void Start()
+	{
+		acceptor_.listen(backlogSize_);
+		Init();
+	}
+
+	void Stop()
+	{
+		stopFlag_ = true;
+	}
+
+private:
+
+	void Init()
+	{
+		auto socket = std::make_shared<asio::ip::tcp::socket>(ioc_);
+		acceptor_.async_accept(*socket, [this, socket]
+		(const boost::system::error_code& error)
+			{
+				Accept(error, socket);
+			});
+	}
+
+	void Accept(
+		const boost::system::error_code& ec,
+		std::shared_ptr<asio::ip::tcp::socket> socket)
+	{
+		if (ec.value() == 0)
+		{
+			(new ServiceFakeAsync(socket))->HandleRequest();
+		}
+
+		if (!stopFlag_)[[likely]]
+		{
+			Init();
+		}
+		else
+		{
+			acceptor_.close();
+		}
+	}
+
+private:
+	asio::io_context& ioc_;
+	uint8_t backlogSize_{ 10 };
+	std::atomic<bool> stopFlag_{};
+	asio::ip::tcp::acceptor acceptor_;
 };
