@@ -141,3 +141,47 @@ private:
 	std::atomic<bool> stopFlag_{};
 	asio::ip::tcp::acceptor acceptor_;
 };
+
+class AsyncServer
+{
+public:
+	AsyncServer()
+	{
+		work_ = std::move(std::make_unique<asio::io_context::work>(ioc_));
+	}
+
+	void Start(uint16_t port,
+		uint16_t threadPoolSize=
+		static_cast<uint16_t>(std::thread::hardware_concurrency() * 2))
+	{
+		threadPoolSize = threadPoolSize ? threadPoolSize : 2;
+		auto endpoint = CreateEndpoint<asio::ip::tcp, asio::ip::address_v4>(port);
+		acceptor_ = std::move(std::make_unique<AsyncAcceptor>(ioc_, endpoint));
+		acceptor_->Start();
+
+		for (auto i{ 0 }; i < threadPoolSize; ++i)
+		{
+			threadPool_.emplace_back(std::make_unique<std::thread>([this]()
+				{
+					ioc_.run();
+				}));
+		}
+	}
+
+	void Stop()
+	{
+		acceptor_->Stop();
+		ioc_.stop();
+
+		for (auto& thread : threadPool_)
+		{
+			thread->join();
+		}
+	}
+
+private:
+	asio::io_context ioc_;
+	std::unique_ptr<AsyncAcceptor> acceptor_{};
+	std::unique_ptr<asio::io_context::work> work_{};
+	std::vector<std::unique_ptr<std::thread>> threadPool_{};
+};
