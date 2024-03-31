@@ -47,16 +47,8 @@ struct Session
 class AsyncTCPClient : public boost::noncopyable
 {
 public:
-	AsyncTCPClient()
-	{
-		m_work = std::move(std::make_unique<boost::asio::io_service::work>(m_ioc));
-		m_thread = move(std::make_unique<std::thread>([this]()
-			{
-				m_ioc.run();
-			}));
-	}
 
-	AsyncTCPClient(uint8_t numberOfThread)
+	AsyncTCPClient(uint8_t numberOfThread = 0)
 	{
 		if (!numberOfThread)
 		{
@@ -70,6 +62,11 @@ public:
 					m_ioc.run();
 				}));
 		}
+	}
+
+	~AsyncTCPClient()
+	{
+		Close();
 	}
 
 	void EmulateLongComputationOp(
@@ -169,16 +166,13 @@ public:
 		}
 	}
 
-	void Close() 
+	void Close()
 	{
 		m_work.reset(nullptr);
-		if (m_thread)
+
+		for (auto& item : m_threads)
 		{
-			m_thread->join();
-		}
-		else
-		{
-			for (auto& item : m_threads)
+			if (item->joinable())
 			{
 				item->join();
 			}

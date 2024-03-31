@@ -150,6 +150,11 @@ public:
 		work_ = std::move(std::make_unique<asio::io_context::work>(ioc_));
 	}
 
+	~AsyncServer()
+	{
+		Stop();
+	}
+
 	void Start(uint16_t port,
 		uint16_t threadPoolSize=
 		static_cast<uint16_t>(std::thread::hardware_concurrency() * 2))
@@ -175,7 +180,10 @@ public:
 
 		for (auto& thread : threadPool_)
 		{
-			thread->join();
+			if (thread->joinable())
+			{
+				thread->join();
+			}
 		}
 	}
 
