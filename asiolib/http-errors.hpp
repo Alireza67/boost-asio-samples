@@ -27,4 +27,29 @@ namespace http_errors
 			}
 		}
 	};
+
+	const boost::system::error_category& get_http_errors_category()
+	{
+		static http_errors_category category;
+		return category;
+	}
+
+	boost::system::error_code make_error_code(http_error_codes error)
+	{
+		return boost::system::error_code(
+			static_cast<int>(error), get_http_errors_category());
+	}
+}
+
+namespace boost
+{
+	namespace system
+	{
+		template<>
+		struct is_error_code_enum
+			<http_errors::http_error_codes>
+		{
+			BOOST_STATIC_CONSTANT(bool, value = true);
+		};
+	}
 }
