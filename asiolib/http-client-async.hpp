@@ -1,45 +1,63 @@
 #pragma once
 #include "pch.h"
+#include <boost/asio.hpp>
 #include "http-errors.hpp"
 
-class HTTPResponse {
+using namespace boost;
+
+class HTTPResponse
+{
 	friend class HTTPRequest;
-	HTTPResponse() :
-		m_response_stream(&m_response_buf)
-	{}
+
+	HTTPResponse()
+		:m_response_stream(&m_response_buf) {}
+
 public:
-	unsigned int get_status_code() const {
+	unsigned int get_status_code() const
+	{
 		return m_status_code;
 	}
-	const std::string& get_status_message() const {
+
+	const std::string& get_status_message() const
+	{
 		return m_status_message;
 	}
-	const std::map<std::string, std::string>& get_headers() {
+
+	const std::map<std::string, std::string>& get_headers()
+	{
 		return m_headers;
 	}
-	const std::istream& get_response() const {
+
+	const std::istream& get_response() const
+	{
 		return m_response_stream;
 	}
+
 private:
-	asio::streambuf& get_response_buf() {
+	asio::streambuf& get_response_buf()
+	{
 		return m_response_buf;
 	}
-	void set_status_code(unsigned int status_code) {
+
+	void set_status_code(unsigned int status_code)
+	{
 		m_status_code = status_code;
 	}
-	void set_status_message(const std::string& status_message) {
+
+	void set_status_message(const std::string& status_message)
+	{
 		m_status_message = status_message;
 	}
-	void add_header(const std::string& name,
-		const std::string& value)
+
+	void add_header(const std::string& name, const std::string& value)
 	{
 		m_headers[name] = value;
 	}
+
 private:
-	unsigned int m_status_code; // HTTP status code.
-	std::string m_status_message; // HTTP status message.
-	// Response headers.
-	std::map<std::string, std::string> m_headers;
+	unsigned int m_status_code{};
+	std::string m_status_message{};
 	asio::streambuf m_response_buf;
 	std::istream m_response_stream;
-}
+	std::map<std::string, std::string> m_headers;
+};
