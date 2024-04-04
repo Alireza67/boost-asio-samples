@@ -15,7 +15,6 @@ typedef void(*Callback) (
 	const HTTPResponse& response,
 	const system::error_code& ec);
 
-
 class HTTPResponse
 {
 	friend class HTTPRequest;
@@ -73,7 +72,8 @@ private:
 	std::map<std::string, std::string> m_headers;
 };
 
-class HTTPRequest {
+class HTTPRequest
+{
 	friend class HTTPClient;
 	static const unsigned int DEFAULT_PORT = 80;
 	HTTPRequest(asio::io_service& ios, unsigned int id) :
@@ -85,50 +85,70 @@ class HTTPRequest {
 		m_was_cancelled(false),
 		m_ios(ios)
 	{}
+
 public:
-	void set_host(const std::string& host) {
+	void set_host(const std::string& host)
+	{
 		m_host = host;
 	}
-	void set_port(unsigned int port) {
+
+	void set_port(unsigned int port)
+	{
 		m_port = port;
 	}
-	void set_uri(const std::string& uri) {
+
+	void set_uri(const std::string& uri)
+	{
 		m_uri = uri;
 	}
-	void set_callback(Callback callback) {
+
+	void set_callback(Callback callback)
+	{
 		m_callback = callback;
 	}
-	std::string get_host() const {
+
+	std::string get_host() const
+	{
 		return m_host;
 	}
-	unsigned int get_port() const {
+
+	unsigned int get_port() const
+	{
 		return m_port;
 	}
-	const std::string& get_uri() const {
+
+	const std::string& get_uri() const
+	{
 		return m_uri;
 	}
-	unsigned int get_id() const {
+
+	unsigned int get_id() const
+	{
 		return m_id;
 	}
-	void execute() {
-		// Ensure that precorditions hold.
+
+	void execute()
+	{
 		assert(m_port > 0);
 		assert(m_host.length() > 0);
 		assert(m_uri.length() > 0);
 		assert(m_callback != nullptr);
-		// Prepare the resolving query.
-		asio::ip::tcp::resolver::query resolver_query(m_host,
+
+		asio::ip::tcp::resolver::query resolver_query(
+			m_host,
 			std::to_string(m_port),
 			asio::ip::tcp::resolver::query::numeric_service);
-		std::unique_lock<std::mutex>
-			cancel_lock(m_cancel_mux);
-		if (m_was_cancelled) {
+
+		std::unique_lock<std::mutex> cancel_lock(m_cancel_mux);
+
+		if (m_was_cancelled)
+		{
 			cancel_lock.unlock();
 			on_finish(boost::system::error_code(
 				asio::error::operation_aborted));
 			return;
 		}
-		// Resolve the host name.
+
 		m_resolver.async_resolve(resolver_query,
 			[this](const boost::system::error_code& ec,
 				asio::ip::tcp::resolver::iterator iterator)
@@ -136,63 +156,70 @@ public:
 				on_host_name_resolved(ec, iterator);
 			});
 	}
-	void cancel() {
-		std::unique_lock<std::mutex>
-			cancel_lock(m_cancel_mux);
+
+	void cancel()
+	{
+		std::unique_lock<std::mutex> cancel_lock(m_cancel_mux);
 		m_was_cancelled = true;
 		m_resolver.cancel();
-		if (m_sock.is_open()) {
+		if (m_sock.is_open())
+		{
 			m_sock.cancel();
 		}
 	}
+
 private:
 	void on_host_name_resolved(
 		const boost::system::error_code& ec,
 		asio::ip::tcp::resolver::iterator iterator)
 	{
-		if (ec.value() != 0) {
+		if (ec.value() != 0)
+		{
 			on_finish(ec);
 			return;
 		}
-		std::unique_lock<std::mutex>
-			cancel_lock(m_cancel_mux);
-		if (m_was_cancelled) {
+
+		std::unique_lock<std::mutex> cancel_lock(m_cancel_mux);
+
+		if (m_was_cancelled)
+		{
 			cancel_lock.unlock();
-			on_finish(boost::system::error_code(
-				asio::error::operation_aborted));
+			on_finish(boost::system::error_code(asio::error::operation_aborted));
 			return;
 		}
-		// Connect to the host.
-		asio::async_connect(m_sock,
-			iterator,
+
+		asio::async_connect(m_sock,	iterator,
 			[this](const boost::system::error_code& ec,
 				asio::ip::tcp::resolver::iterator iterator)
 			{
 				on_connection_established(ec, iterator);
 			});
 	}
+
 	void on_connection_established(
 		const boost::system::error_code& ec,
 		asio::ip::tcp::resolver::iterator iterator)
 	{
-		if (ec.value() != 0) {
+		if (ec.value() != 0)
+		{
 			on_finish(ec);
 			return;
 		}
-		// Compose the request message.
+
 		m_request_buf += "GET " + m_uri + " HTTP/1.1\r\n";
-		// Add mandatory header.
 		m_request_buf += "Host: " + m_host + "\r\n";
 		m_request_buf += "\r\n";
-		std::unique_lock<std::mutex>
-			cancel_lock(m_cancel_mux);
-		if (m_was_cancelled) {
+
+		std::unique_lock<std::mutex>cancel_lock(m_cancel_mux);
+
+		if (m_was_cancelled)
+		{
 			cancel_lock.unlock();
 			on_finish(boost::system::error_code(
 				asio::error::operation_aborted));
 			return;
 		}
-		// Send the request message.
+
 		asio::async_write(m_sock,
 			asio::buffer(m_request_buf),
 			[this](const boost::system::error_code& ec,
@@ -201,23 +228,27 @@ private:
 				on_request_sent(ec, bytes_transferred);
 			});
 	}
+
 	void on_request_sent(const boost::system::error_code& ec,
 		std::size_t bytes_transferred)
 	{
-		if (ec.value() != 0) {
+		if (ec.value() != 0)
+		{
 			on_finish(ec);
 			return;
 		}
+
 		m_sock.shutdown(asio::ip::tcp::socket::shutdown_send);
-		std::unique_lock<std::mutex>
-			cancel_lock(m_cancel_mux);
-		if (m_was_cancelled) {
+		std::unique_lock<std::mutex> cancel_lock(m_cancel_mux);
+
+		if (m_was_cancelled)
+		{
 			cancel_lock.unlock();
 			on_finish(boost::system::error_code(
 				asio::error::operation_aborted));
 			return;
 		}
-		// Read the status line.
+
 		asio::async_read_until(m_sock,
 			m_response.get_response_buf(),
 			"\r\n",
@@ -232,49 +263,50 @@ private:
 		const boost::system::error_code& ec,
 		std::size_t bytes_transferred)
 	{
-		if (ec.value() != 0) {
+		if (ec.value() != 0)
+		{
 			on_finish(ec);
 			return;
 		}
-		// Parse the status line.
+
 		std::string http_version;
 		std::string str_status_code;
 		std::string status_message;
-		std::istream response_stream(
-			&m_response.get_response_buf());
+		std::istream response_stream(&m_response.get_response_buf());
 		response_stream >> http_version;
-		if (http_version != "HTTP/1.1") {
-			// Response is incorrect.
+
+		if (http_version != "HTTP/1.1")
+		{
 			on_finish(http_errors::http_error_codes::invalid_response);
 			return;
 		}
+
 		response_stream >> str_status_code;
-		// Convert status code to integer.
 		unsigned int status_code = 200;
-		try {
+		
+		try 
+		{
 			status_code = std::stoul(str_status_code);
 		}
-		catch (std::logic_error&) {
-			// Response is incorrect.
+		catch (std::logic_error&)
+		{
 			on_finish(http_errors::http_error_codes::invalid_response);
 			return;
 		}
 		std::getline(response_stream, status_message, '\r');
-		// Remove symbol '\n' from the buffer.
 		response_stream.get();
 		m_response.set_status_code(status_code);
 		m_response.set_status_message(status_message);
-		std::unique_lock<std::mutex>
-			cancel_lock(m_cancel_mux);
-		if (m_was_cancelled) {
+		std::unique_lock<std::mutex> cancel_lock(m_cancel_mux);
+
+		if (m_was_cancelled)
+		{
 			cancel_lock.unlock();
 			on_finish(boost::system::error_code(
 				asio::error::operation_aborted));
 			return;
 		}
-		// At this point the status line is successfully
-		// received and parsed.
-		// Now read the response headers.
+
 		asio::async_read_until(m_sock,
 			m_response.get_response_buf(),
 			"\r\n\r\n",
@@ -286,25 +318,29 @@ private:
 				bytes_transferred);
 			});
 	}
-	void on_headers_received(const boost::system::error_code& ec,
+
+	void on_headers_received(
+		const boost::system::error_code& ec,
 		std::size_t bytes_transferred)
 	{
-		if (ec.value() != 0) {
+		if (ec.value() != 0)
+		{
 			on_finish(ec);
 			return;
 		}
-		// Parse and store headers.
+
 		std::string header, header_name, header_value;
-		std::istream response_stream(
-			&m_response.get_response_buf());
-		while (true) {
+		std::istream response_stream(&m_response.get_response_buf());
+
+		while (true)
+		{
 			std::getline(response_stream, header, '\r');
-			// Remove \n symbol from the stream.
 			response_stream.get();
 			if (header == "")
 				break;
 			size_t separator_pos = header.find(':');
-			if (separator_pos != std::string::npos) {
+			if (separator_pos != std::string::npos)
+			{
 				header_name = header.substr(0,
 					separator_pos);
 				if (separator_pos < header.length() - 1)
@@ -316,15 +352,16 @@ private:
 					header_value);
 			}
 		}
-		std::unique_lock<std::mutex>
-			cancel_lock(m_cancel_mux);
-		if (m_was_cancelled) {
+
+		std::unique_lock<std::mutex> cancel_lock(m_cancel_mux);
+
+		if (m_was_cancelled)
+		{
 			cancel_lock.unlock();
-			on_finish(boost::system::error_code(
-				asio::error::operation_aborted));
+			on_finish(boost::system::error_code(asio::error::operation_aborted));
 			return;
 		}
-		// Now we want to read the response body.
+
 		asio::async_read(m_sock,
 			m_response.get_response_buf(),
 			[this](
@@ -336,6 +373,7 @@ private:
 			});
 		return;
 	}
+
 	void on_response_body_received(
 		const boost::system::error_code& ec,
 		std::size_t bytes_transferred)
@@ -345,9 +383,11 @@ private:
 		else
 			on_finish(ec);
 	}
+
 	void on_finish(const boost::system::error_code& ec)
 	{
-		if (ec.value() != 0) {
+		if (ec.value() != 0)
+		{
 			std::cout << "Error occured! Error code = "
 				<< ec.value()
 				<< ". Message: " << ec.message();
@@ -355,21 +395,18 @@ private:
 		m_callback(*this, m_response, ec);
 		return;
 	}
+
 private:
-	// Request parameters.
-	std::string m_host;
-	unsigned int m_port;
-	std::string m_uri;
-	// Object unique identifier.
-	unsigned int m_id;
-	// Callback to be called when request completes.
+	std::string m_uri{};
+	unsigned int m_id{};
 	Callback m_callback;
-	// Buffer containing the request line.
-	std::string m_request_buf;
-	asio::ip::tcp::socket m_sock;
-	asio::ip::tcp::resolver m_resolver;
+	std::string m_host{};
+	unsigned int m_port{};
+	bool m_was_cancelled{};
 	HTTPResponse m_response;
-	bool m_was_cancelled;
 	std::mutex m_cancel_mux;
 	asio::io_service& m_ios;
+	std::string m_request_buf{};
+	asio::ip::tcp::socket m_sock;
+	asio::ip::tcp::resolver m_resolver;
 };
