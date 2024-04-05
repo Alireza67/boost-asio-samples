@@ -410,3 +410,31 @@ private:
 	asio::ip::tcp::socket m_sock;
 	asio::ip::tcp::resolver m_resolver;
 };
+
+class HTTPClient {
+public:
+	HTTPClient()
+	{
+		m_work.reset(new boost::asio::io_service::work(m_ios));
+		m_thread.reset(new std::thread([this]() {
+			m_ios.run();
+			}));
+	}
+
+	std::shared_ptr<HTTPRequest> create_request(unsigned int id)
+	{
+		return std::shared_ptr<HTTPRequest>(
+			new HTTPRequest(m_ios, id));
+	}
+
+	void close()
+	{
+		m_work.reset(NULL);
+		m_thread->join();
+	}
+
+private:
+	asio::io_service m_ios;
+	std::unique_ptr<std::thread> m_thread;
+	std::unique_ptr<boost::asio::io_service::work> m_work;
+};
