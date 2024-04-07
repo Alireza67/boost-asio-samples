@@ -41,6 +41,7 @@
   <ItemGroup>
     <ClCompile Include="binding.cpp" />
     <ClCompile Include="endpoint.cpp" />
+    <ClCompile Include="http-server-client.cpp" />
     <ClCompile Include="io_buffers.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

@@ -1,14 +1,9 @@
 #pragma once
 #include "pch.h"
+#include "http-service-async.hpp"
 #include "endpoints.hpp"
 #include "sockets.hpp"
 #include "binding.hpp"
-
-class AsyncService
-{
-public:
-	virtual void HandleRequest() = 0;
-};
 
 class ServiceFakeAsync : public AsyncService
 {
@@ -84,6 +79,7 @@ private:
 	}
 };
 
+template<typename ServiceType>
 class AsyncAcceptor
 {
 public:
@@ -122,7 +118,7 @@ private:
 	{
 		if (ec.value() == 0)
 		{
-			(new ServiceFakeAsync(socket))->HandleRequest();
+			(new ServiceType(socket))->HandleRequest();
 		}
 
 		if (!stopFlag_)[[likely]]
@@ -142,6 +138,7 @@ private:
 	asio::ip::tcp::acceptor acceptor_;
 };
 
+template<typename ServiceType>
 class AsyncServer
 {
 public:
@@ -161,7 +158,8 @@ public:
 	{
 		threadPoolSize = threadPoolSize ? threadPoolSize : 2;
 		auto endpoint = CreateEndpoint<asio::ip::tcp, asio::ip::address_v4>(port);
-		acceptor_ = std::move(std::make_unique<AsyncAcceptor>(ioc_, endpoint));
+		acceptor_ = std::move(
+			std::make_unique<AsyncAcceptor<ServiceType>>(ioc_, endpoint));
 		acceptor_->Start();
 
 		for (auto i{ 0 }; i < threadPoolSize; ++i)
@@ -189,7 +187,7 @@ public:
 
 private:
 	asio::io_context ioc_;
-	std::unique_ptr<AsyncAcceptor> acceptor_{};
 	std::unique_ptr<asio::io_context::work> work_{};
 	std::vector<std::unique_ptr<std::thread>> threadPool_{};
+	std::unique_ptr<AsyncAcceptor<ServiceType>> acceptor_{};
 };

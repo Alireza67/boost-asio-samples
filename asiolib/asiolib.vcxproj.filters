@@ -54,7 +54,7 @@
     <ClInclude Include="http-errors.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="http-server-async.hpp">
+    <ClInclude Include="http-service-async.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -6,10 +6,8 @@
 using namespace boost;
 namespace fs = std::filesystem;
 
-class HttpService;
-
-const std::map<unsigned int, std::string>
-HttpService::http_status_table =
+static const std::map<unsigned int, std::string>
+http_status_table =
 {
 	{ 200, "200 OK" },
 	{ 404, "404 Not Found" },
@@ -19,10 +17,14 @@ HttpService::http_status_table =
 	{ 505, "505 HTTP Version Not Supported" }
 };
 
-class HttpService
+class AsyncService
 {
-	static const std::map<unsigned int, std::string> http_status_table;
+public:
+	virtual void HandleRequest() = 0;
+};
 
+class HttpService : public AsyncService
+{
 public:
 	HttpService(std::shared_ptr<boost::asio::ip::tcp::socket> sock)
 		:
@@ -32,7 +34,7 @@ public:
 		m_resource_size_bytes(0)
 	{};
 
-	void start_handling()
+	void HandleRequest()
 	{
 		asio::async_read_until(*m_sock.get(),
 			m_request,

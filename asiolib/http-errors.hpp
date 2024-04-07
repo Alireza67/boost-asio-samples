@@ -28,13 +28,13 @@ namespace http_errors
 		}
 	};
 
-	const boost::system::error_category& get_http_errors_category()
+	inline const boost::system::error_category& get_http_errors_category()
 	{
 		static http_errors_category category;
 		return category;
 	}
 
-	boost::system::error_code make_error_code(http_error_codes error)
+	inline boost::system::error_code make_error_code(http_error_codes error)
 	{
 		return boost::system::error_code(
 			static_cast<int>(error), get_http_errors_category());

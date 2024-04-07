@@ -27,7 +27,7 @@ void Testhandler(
 TEST(TCP_ASYNC, tcp_client_server_async)
 {
 	auto port{ 6969 };
-	AsyncServer server;
+	AsyncServer<ServiceFakeAsync> server;
 	server.Start(port);
 
 	AsyncTCPClient client;

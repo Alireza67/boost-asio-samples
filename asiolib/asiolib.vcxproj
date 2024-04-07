@@ -145,7 +145,7 @@
     <ClInclude Include="dns-resolve.hpp" />
     <ClInclude Include="endpoints.hpp" />
     <ClInclude Include="http-errors.hpp" />
-    <ClInclude Include="http-server-async.hpp" />
+    <ClInclude Include="http-service-async.hpp" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="servers.hpp" />
     <ClInclude Include="sockets.hpp" />

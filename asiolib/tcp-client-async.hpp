@@ -215,7 +215,7 @@ private:
 		std::map<int, std::shared_ptr<Session>> m_active_sessions;
 };
 
-void handler(
+inline void handler(
 	unsigned int request_id,
 	const std::string& response,
 	const system::error_code& ec)
