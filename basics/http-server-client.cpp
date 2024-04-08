@@ -31,7 +31,7 @@ TEST(Http, simpleScenario)
 	HTTPClient client;
 	auto request = client.create_request(1);
 	request->set_host("localhost");
-	request->set_uri("/index.html");
+	request->set_uri("/manual.html");
 	request->set_port(6969);
 	request->set_callback(Testhandler2);
 	request->execute();

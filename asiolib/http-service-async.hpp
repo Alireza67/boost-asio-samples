@@ -157,7 +157,7 @@ private:
 	void process_request()
 	{
 		std::string resource_file_path = 
-			std::string("D:\\http_root") + m_requested_resource;
+			std::string("sample") + m_requested_resource;
 
 		if (!fs::exists(resource_file_path))
 		{
